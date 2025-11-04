@@ -1,1 +1,78 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>fast-dl maps</title><script src="https://cdn.tailwindcss.com"></script><style>::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:#9ca3af}::-webkit-scrollbar-track{background:#111827}a{color:inherit}</style></head><body class="bg-black text-gray-300 antialiased font-mono"><div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8"><main><div id="file-list-container" class="space-y-0 text-gray-300"></div></main></div><script>const GITHUB_USERNAME="mattywashere",REPO_NAME="fast-dl",REPO_BRANCH="main",MAP_FOLDER="maps",listcontainer=document.getElementById("file-list-container"),log=t=>Math.log(t)/Math.LN10;function formatbytes(t,e=2){if(0===t)return"0 bytes";const n=e<0?0:e,a=Math.floor(log(t)/log(1024));return parseFloat((t/Math.pow(1024,a)).toFixed(n))+" "+["bytes","kb","mb","gb","tb"][a]}function renderEntry(t,e){const n=document.createElement("a");n.className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 px-3 cursor-pointer mb-0.5";const a=`https://raw.githubusercontent.com/mattywashere/fast-dl/main/maps/${encodeURIComponent(t)}`;return n.href=a,n.target="_blank",n.innerHTML=`<span class="text-gray-300 truncate"><span class="text-white mr-2">/maps/</span>${t}</span>\n                         <span class="text-sm text-gray-400 sm:ml-4 mt-1 sm:mt-0 whitespace-nowrap">${formatbytes(e)}</span>`,n}async function fetchMaps(){listcontainer.innerHTML='<p class="text-gray-500 p-3">fetching map list...</p>';const t=`https://api.github.com/repos/mattywashere/fast-dl/contents/maps?ref=main&${Date.now()}`;try{const e=await fetch(t);if(!e.ok)return void(listcontainer.innerHTML='<p class="text-red-400 p-3">failed to load maps (folder missing or API limit reached).</p>');const n=(await e.json()).filter(t=>"file"===t.type).sort((t,e)=>t.name.localeCompare(e.name));0===n.length?listcontainer.innerHTML='<p class="text-gray-400 p-3">no maps found in /maps/.</p>':(listcontainer.innerHTML="",n.forEach(t=>listcontainer.appendChild(renderEntry(t.name,t.size))))}catch{listcontainer.innerHTML='<p class="text-red-400 p-3">a network error occurred.</p>'}}fetchMaps()</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>fast-dl maps</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-thumb { background: #9ca3af; }
+    ::-webkit-scrollbar-track { background: #111827; }
+    a { color: inherit; }
+  </style>
+</head>
+<body class="bg-black text-gray-300 antialiased font-mono">
+  <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+    <main>
+      <div id="file-list-container" class="space-y-0 text-gray-300"></div>
+    </main>
+  </div>
+
+  <script>
+    const GITHUB_USERNAME = 'mattywashere';
+    const REPO_NAME = 'fast-dl';
+    const REPO_BRANCH = 'main';
+    const MAP_FOLDER = 'garrysmod/maps';
+
+    const listcontainer = document.getElementById('file-list-container');
+    const log = x => Math.log(x)/Math.LN10;
+
+    function formatbytes(bytes, decimals = 2) {
+      if(bytes===0) return '0 bytes';
+      const k = 1024, sizes=['bytes','kb','mb','gb','tb'], i=Math.floor(log(bytes)/Math.log(k));
+      return parseFloat((bytes/Math.pow(k,i)).toFixed(decimals<0?0:decimals))+' '+sizes[i];
+    }
+
+    function renderEntry(name, size){
+      const entry=document.createElement('a');
+      entry.className='flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 px-3 cursor-pointer mb-0.5';
+      const url=`https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/${REPO_BRANCH}/${MAP_FOLDER}/${encodeURIComponent(name)}`;
+      entry.href=url;
+      entry.target="_blank";
+      entry.innerHTML=`<span class="text-gray-300 truncate"><span class="text-white mr-2">/${MAP_FOLDER}/</span>${name}</span>
+      <span class="text-sm text-gray-400 sm:ml-4 mt-1 sm:mt-0 whitespace-nowrap">${formatbytes(size)}</span>`;
+      return entry;
+    }
+
+    async function fetchMaps(){
+      listcontainer.innerHTML='<p class="text-gray-500 p-3">fetching map list...</p>';
+      const apiURL=`https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${MAP_FOLDER}?ref=${REPO_BRANCH}&${Date.now()}`;
+
+      try {
+        const response=await fetch(apiURL);
+        if(!response.ok){
+          listcontainer.innerHTML='<p class="text-red-400 p-3">failed to load</p>';
+          return;
+        }
+
+        const data=await response.json();
+        const files=data.filter(i=>i.type==='file').sort((a,b)=>a.name.localeCompare(b.name));
+
+        if(!files.length){
+          listcontainer.innerHTML='<p class="text-gray-400 p-3">no maps found in /maps/.</p>';
+          return;
+        }
+
+        listcontainer.innerHTML='';
+        files.forEach(f=>listcontainer.appendChild(renderEntry(f.name,f.size)));
+
+      } catch {
+        listcontainer.innerHTML='<p class="text-red-400 p-3">failed to load</p>';
+      }
+    }
+
+    fetchMaps();
+  </script>
+</body>
+</html>
