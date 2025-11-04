@@ -7,11 +7,6 @@
     <!-- load tailwind css for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* ensure html and body take full viewport height for proper centering */
-        html, body {
-            height: 100%;
-        }
-
         /* custom scrollbar styles for dark theme */
         ::-webkit-scrollbar {
             width: 8px;
@@ -21,30 +16,6 @@
         }
         ::-webkit-scrollbar-track {
             background: #111827; /* very dark gray */
-        }
-        /* loading indicator animation: cycles through '.', '. .', and '. . .' */
-        .loading-dots:after {
-            overflow: hidden;
-            display: inline-block;
-            vertical-align: bottom;
-            -webkit-animation: loading-dots 1s infinite steps(1, start);
-            animation: loading-dots 1s infinite steps(1, start);
-            content: "";
-        }
-        
-        @keyframes loading-dots {
-            0% { content: ""; }
-            25% { content: "."; }
-            50% { content: ". ."; }
-            75% { content: ". . ."; }
-            100% { content: ""; }
-        }
-        @-webkit-keyframes loading-dots {
-            0% { content: ""; }
-            25% { content: "."; }
-            50% { content: ". ."; }
-            75% { content: ". . ."; }
-            100% { content: ""; }
         }
 
         /* ensure links inherit text color */
@@ -56,7 +27,7 @@
 <!-- set body to black background and monospace font -->
 <body class="bg-black text-gray-300 antialiased font-mono">
 
-    <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 h-screen">
+    <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         
         <!-- back button: hidden when viewing categories, shown when viewing files -->
         <a id="back-button" 
@@ -93,13 +64,6 @@
         // resets the file list container to its normal flow
         function resetListContainerClasses() {
              listContainer.className = 'space-y-0';
-        }
-
-        // displays the loading state in lowercase and centers it
-        function showLoading() {
-            // we use flex and justify-center here, relying on the #app div having h-screen
-            listContainer.className = 'flex items-center justify-center h-full space-y-0'; 
-            listContainer.innerHTML = `<p class="text-gray-400">loading <span class="loading-dots"></span></p>`;
         }
 
         // calculates safe log (used for size formatting)
@@ -164,7 +128,9 @@
         // fetches and displays content from the github repository
         async function fetchContent(path = null) {
             currentPath = path;
-            showLoading();
+
+            // start by clearing the list container while fetching
+            listContainer.innerHTML = '';
 
             // control back button visibility
             if (path === null) {
@@ -175,9 +141,11 @@
                 backButton.classList.remove('hidden');
             }
 
-            const apiURL = \`https://api.github.com/repos/\${GITHUB_USERNAME}/\${REPO_NAME}/contents/\${path}?ref=\${REPO_BRANCH}\`;
-
-            listContainer.innerHTML = '';
+            // generate a cache-busting timestamp
+            const cacheBuster = Date.now();
+            
+            // append the cache buster to the API URL
+            const apiURL = \`https://api.github.com/repos/\${GITHUB_USERNAME}/\${REPO_NAME}/contents/\${path}?ref=\${REPO_BRANCH}&\${cacheBuster}\`;
 
             try {
                 const response = await fetch(apiURL);
