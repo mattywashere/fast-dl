@@ -142,8 +142,12 @@
                 return;
             }
 
-            // update browser history (url will look like /fast-dl/murder)
-            history.pushState({path: path}, '', path);
+            // --- FIX APPLIED HERE ---
+            // Construct the full URL path: e.g., /fast-dl/murder
+            const fullPath = '/' + REPO_NAME + '/' + path;
+            
+            // update browser history (url will now look like /fast-dl/murder)
+            history.pushState({path: path}, '', fullPath);
             fetchContent(path);
         }
 
@@ -201,11 +205,23 @@
 
         // handle browser's back/forward buttons
         window.onpopstate = (event) => {
-            const path = window.location.pathname.split('/').pop();
-            if (CATEGORIES.includes(path)) {
+            // Get the last path segment that is a category, or null for root
+            const pathSegments = window.location.pathname.split('/').filter(s => s);
+            // Check the segment after the repo name (fast-dl)
+            const repoIndex = pathSegments.findIndex(segment => segment === REPO_NAME);
+            
+            let currentPathFromUrl = null;
+            if (repoIndex !== -1 && pathSegments.length > repoIndex + 1) {
+                const potentialPath = pathSegments[repoIndex + 1];
+                if (CATEGORIES.includes(potentialPath)) {
+                    currentPathFromUrl = potentialPath;
+                }
+            }
+
+            if (currentPathFromUrl) {
                 // user navigated back/forward into a category
-                currentpath = path;
-                fetchContent(path);
+                currentpath = currentPathFromUrl;
+                fetchContent(currentPathFromUrl);
             } else {
                 // user navigated back to the root
                 currentpath = null;
@@ -216,11 +232,18 @@
         // determine initial path on page load
         function getInitialPath() {
             // get the last segment of the url pathname (e.g., "murder" from /fast-dl/murder)
-            const path = window.location.pathname.split('/').pop();
+            const pathSegments = window.location.pathname.split('/').filter(s => s);
             
-            // only use the path if it matches one of our defined categories
-            if (CATEGORIES.includes(path)) {
-                return path;
+            // Find the index of the repository name in the path
+            const repoIndex = pathSegments.findIndex(segment => segment === REPO_NAME);
+
+            // Check if there is a segment immediately following the REPO_NAME
+            if (repoIndex !== -1 && pathSegments.length > repoIndex + 1) {
+                 const path = pathSegments[repoIndex + 1];
+                 // only use the path if it matches one of our defined categories
+                 if (CATEGORIES.includes(path)) {
+                     return path;
+                 }
             }
             return null;
         }
