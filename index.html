@@ -7,6 +7,11 @@
     <!-- load tailwind css for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* ensure html and body take full viewport height for proper centering */
+        html, body {
+            height: 100%;
+        }
+
         /* custom scrollbar styles for dark theme */
         ::-webkit-scrollbar {
             width: 8px;
@@ -51,7 +56,7 @@
 <!-- set body to black background and monospace font -->
 <body class="bg-black text-gray-300 antialiased font-mono">
 
-    <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 **h-screen**">
+    <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 h-screen">
         
         <!-- back button: hidden when viewing categories, shown when viewing files -->
         <a id="back-button" 
