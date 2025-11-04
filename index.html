@@ -131,13 +131,12 @@
             if (path === null) {
                 // navigate to the root and update history
                 
-                // Get the base protocol and hostname (e.g., https://mattywashere.github.io)
+                // Construct the absolute base URL: https://mattywashere.github.io/fast-dl/
                 const baseHost = window.location.origin;
-                // Get the base repository path (e.g., /fast-dl/)
-                const basePath = '/' + REPO_NAME + '/';
+                const absoluteRoot = baseHost + '/' + REPO_NAME + '/';
 
-                // Force the history state back to the clean base URL
-                history.pushState(null, '', baseHost + basePath);
+                // Force the history state back to the absolute root URL
+                history.pushState(null, '', absoluteRoot);
                 
                 renderCategoryList();
                 return;
