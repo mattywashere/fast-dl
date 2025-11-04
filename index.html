@@ -39,7 +39,8 @@
 
         <!-- dynamic content area: where categories and files are listed -->
         <main>
-            <div id="file-list-container" class="space-y-0">
+            <!-- ADDED text-gray-300 CLASS HERE TO GUARANTEE VISIBILITY -->
+            <div id="file-list-container" class="space-y-0 text-gray-300">
                 <!-- initial categories or file list will be injected here -->
             </div>
         </main>
@@ -64,7 +65,8 @@
         
         // resets the file list container to its normal flow
         function resetListContainerClasses() {
-             listContainer.className = 'space-y-0';
+             // ensure base classes remain, especially the new guaranteed text color
+             listContainer.className = 'space-y-0 text-gray-300'; 
         }
 
         // calculates safe log (used for size formatting)
