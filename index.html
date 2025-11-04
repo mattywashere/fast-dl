@@ -30,9 +30,10 @@
     <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         
         <!-- back button: hidden when viewing categories, shown when viewing files -->
+        <!-- UPDATED: onclick now uses navigateTo to handle the path change -->
         <a id="back-button" 
            href="javascript:void(0)" 
-           onclick="fetchContent(null)"
+           onclick="navigateTo(null)"
            class="hidden text-gray-400 text-3xl mb-4 pl-3 cursor-pointer">
             &lt;
         </a>
@@ -91,8 +92,12 @@
 
             if (isFolder) {
                 // category entry
-                entryElement.href = "javascript:void(0)";
-                entryElement.onclick = () => fetchContent(name);
+                // UPDATED: Use history API to change the URL
+                entryElement.href = "/" + name;
+                entryElement.onclick = (e) => {
+                    e.preventDefault(); // prevent default link behavior
+                    navigateTo(name);
+                };
 
                 entryElement.innerHTML = '<span class="text-gray-300 truncate">'
                     + '<span class="text-white mr-2">' + name + '/</span>'
@@ -125,17 +130,26 @@
             // hide back button at root
             backButton.classList.add('hidden');
         }
-        
-        // fetches and displays content from the github repository (dynamic content)
-        async function fetchContent(path = null) {
+
+        // handles client-side navigation and updates browser history
+        function navigateTo(path) {
             currentPath = path;
 
-            // if path is null, we are returning to the root, so skip API call
             if (path === null) {
+                // If path is null, navigate to the root and update history
+                history.pushState(null, '', window.location.pathname.split('/').slice(0, 2).join('/'));
                 renderCategoryList();
                 return;
             }
 
+            // Update browser history (URL will look like /fast-dl/murder)
+            history.pushState({path: path}, '', path);
+            fetchContent(path);
+        }
+
+        // fetches and displays content from the github repository (dynamic content)
+        async function fetchContent(path) {
+            
             // show a quick message before fetching (since we removed the animation)
             listContainer.innerHTML = '<p class="text-gray-500 p-3">fetching directory data...</p>';
             backButton.classList.remove('hidden');
@@ -182,9 +196,43 @@
                 listContainer.innerHTML = '<p class="text-red-400 p-3">a network error occurred (check your connection).</p>';
             }
         }
+        
+        // === initial loading and history handling ===
 
-        // start the app by rendering the static category list
-        renderCategoryList();
+        // handle browser's back/forward buttons
+        window.onpopstate = (event) => {
+            const path = window.location.pathname.split('/').pop();
+            if (CATEGORIES.includes(path)) {
+                // User navigated back/forward into a category
+                currentPath = path;
+                fetchContent(path);
+            } else {
+                // User navigated back to the root
+                currentPath = null;
+                renderCategoryList();
+            }
+        };
+
+        // determine initial path on page load
+        function getInitialPath() {
+            // Get the last segment of the URL pathname (e.g., "murder" from /fast-dl/murder)
+            const path = window.location.pathname.split('/').pop();
+            
+            // Only use the path if it matches one of our defined categories
+            if (CATEGORIES.includes(path)) {
+                return path;
+            }
+            return null;
+        }
+
+        // start the app by checking the URL or rendering the static category list
+        const initialPath = getInitialPath();
+        if (initialPath) {
+             currentPath = initialPath;
+             fetchContent(initialPath);
+        } else {
+             renderCategoryList();
+        }
     </script>
 </body>
 </html>
