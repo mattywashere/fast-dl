@@ -40,6 +40,7 @@
         <!-- dynamic content area: where categories and files are listed -->
         <main>
             <div id="file-list-container" class="space-y-0">
+                <!-- initial content will be injected here -->
             </div>
         </main>
 
@@ -64,6 +65,14 @@
         // resets the file list container to its normal flow
         function resetListContainerClasses() {
              listContainer.className = 'space-y-0';
+        }
+
+        // displays a non-animated message when fetching starts
+        function showFetchingMessage() {
+            // reset classes to ensure it's not trying to center anything
+            resetListContainerClasses(); 
+            // set a simple static message to show work is being done
+            listContainer.innerHTML = '<p class="text-gray-500 p-3">fetching directory data...</p>';
         }
 
         // calculates safe log (used for size formatting)
@@ -129,12 +138,13 @@
         async function fetchContent(path = null) {
             currentPath = path;
 
-            // start by clearing the list container while fetching
-            listContainer.innerHTML = '';
+            // 1. show message immediately before fetching
+            showFetchingMessage();
 
             // control back button visibility
             if (path === null) {
                 backButton.classList.add('hidden');
+                // if at root, skip fetch and render static list
                 renderCategoryList();
                 return;
             } else {
@@ -153,8 +163,9 @@
                 resetListContainerClasses();
 
                 if (!response.ok) {
-                    // error if the folder doesn't exist
-                    listContainer.innerHTML = \`<p class="text-red-400 p-3">error: could not load the directory for *\${path}*. check that the folder exists in your github repo and is spelled correctly.</p>\`;
+                    // error if the folder doesn't exist or API fails
+                    const errorText = \`error: failed to load *\${path}*. this may be due to the folder not existing or github api rate limits.\`;
+                    listContainer.innerHTML = \`<p class="text-red-400 p-3">\${errorText}</p>\`;
                     return;
                 }
 
@@ -178,7 +189,7 @@
             } catch (error) {
                 console.error("failed to fetch map files:", error);
                 // general network error message
-                listContainer.innerHTML += '<p class="text-red-400 p-3">a network or api error occurred while trying to load files.</p>';
+                listContainer.innerHTML = '<p class="text-red-400 p-3">a network error occurred (check your connection).</p>';
             }
         }
 
