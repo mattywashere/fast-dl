@@ -131,11 +131,13 @@
             if (path === null) {
                 // navigate to the root and update history
                 
-                // get the base path (e.g., /fast-dl) from the current url
-                const basePath = window.location.pathname.split('/').slice(0, 2).join('/');
+                // Get the base protocol and hostname (e.g., https://mattywashere.github.io)
+                const baseHost = window.location.origin;
+                // Get the base repository path (e.g., /fast-dl/)
+                const basePath = '/' + REPO_NAME + '/';
 
-                // use the determined basepath to ensure the url is correct
-                history.pushState(null, '', basePath);
+                // Force the history state back to the clean base URL
+                history.pushState(null, '', baseHost + basePath);
                 
                 renderCategoryList();
                 return;
