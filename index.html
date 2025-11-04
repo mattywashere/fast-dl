@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Archive - Downloads</title>
-    <!-- Load Tailwind CSS -->
+    <title></title>
+    <!-- load tailwind css for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom scrollbar for a darker, sleek look */
+        /* custom scrollbar styles for dark theme */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -15,38 +15,46 @@
             background: #9ca3af; /* gray-400 */
         }
         ::-webkit-scrollbar-track {
-            background: #111827; /* Very dark gray track (gray-900) */
+            background: #111827; /* very dark gray */
         }
-        /* Style for the loading indicator */
+        /* loading indicator animation: cycles through '.', '. .', and '. . .' */
         .loading-dots:after {
             overflow: hidden;
             display: inline-block;
             vertical-align: bottom;
-            -webkit-animation: ellipsis steps(4,end) 900ms infinite;      
-            animation: ellipsis steps(4,end) 900ms infinite;
-            content: "\2026"; /* ascii for three dots */
-            width: 0px;
+            /* uses a 1s cycle and steps to instantly change the content property */
+            -webkit-animation: loading-dots 1s infinite steps(1, start);
+            animation: loading-dots 1s infinite steps(1, start);
+            content: ""; /* starts empty */
         }
-        @keyframes ellipsis {
-            to { width: 1.25em; }
+        
+        @keyframes loading-dots {
+            0% { content: ""; }
+            25% { content: "."; }
+            50% { content: ". ."; }
+            75% { content: ". . ."; }
+            100% { content: ""; }
         }
-        @-webkit-keyframes ellipsis {
-            to { width: 1.25em; }
+        @-webkit-keyframes loading-dots {
+            0% { content: ""; }
+            25% { content: "."; }
+            50% { content: ". ."; }
+            75% { content: ". . ."; }
+            100% { content: ""; }
         }
-        /* Override default link color to maintain grayscale look */
+
+        /* ensure links inherit text color (no blue/purple links) */
         a {
             color: inherit;
         }
     </style>
 </head>
-<!-- Added font-mono to the body tag to apply the monospace font globally -->
+<!-- set body to black background and monospace font -->
 <body class="bg-black text-gray-300 antialiased font-mono">
 
     <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         
-        <!-- Header Section (Title removed) -->
-
-        <!-- Back Button (New Element - Static, no hover/transition) -->
+        <!-- back button: hidden when viewing categories, shown when viewing files -->
         <a id="back-button" 
            href="javascript:void(0)" 
            onclick="fetchContent(null)"
@@ -54,163 +62,149 @@
             &lt;
         </a>
 
-        <!-- Main Content: Downloads Section -->
+        <!-- dynamic content area: where categories and files are listed -->
         <main>
-            
-            <!-- Dynamic Content Area -->
             <div id="file-list-container" class="space-y-0 min-h-[50px]">
-                <!-- Content will be loaded here by JavaScript -->
+                <!-- initial loading message -->
                 <p id="initial-loading-message" class="text-gray-400 p-3">
                     loading <span class="loading-dots"></span>
                 </p>
             </div>
         </main>
 
-        <!-- Footer section has been removed -->
     </div>
 
-    <!-- JavaScript for Dynamic GitHub File Fetching -->
+    <!-- javascript for dynamic github file fetching -->
     <script>
-        // === GITHUB REPO CONFIG ===
+        // === github repository configuration (change these) ===
         const GITHUB_USERNAME = 'mattywashere'; 
         const REPO_NAME = 'fast-dl'; 
         const REPO_BRANCH = 'main'; 
-        // ==========================
+        // =======================================================
 
-        // The top-level categories the user requested
+        // the defined categories (folders) at the root level
         const CATEGORIES = ['deathrun', 'murder', 'prophunt', 'smash'];
         
-        let currentPath = null; // State: null (viewing categories) or 'category-name' (viewing files)
+        let currentPath = null; 
 
         const listContainer = document.getElementById('file-list-container');
-        const backButton = document.getElementById('back-button'); // Get the new button element
+        const backButton = document.getElementById('back-button'); 
         
-        // Function to show a loading state
+        // displays the loading state in lowercase
         function showLoading() {
-            // Updated loading message to be lowercase
             listContainer.innerHTML = `<p class="text-gray-400 p-3">loading <span class="loading-dots"></span></p>`;
         }
 
-        // Helper function for safe log calculation
+        // calculates safe log (used for size formatting)
         const log = (x) => Math.log(x) / Math.LN10;
 
-        // Function to convert bytes to a human-readable size
+        // converts file size in bytes to human-readable format (e.g., "1.2 mb")
         function formatBytes(bytes, decimals = 2) {
-            if (bytes === 0) return '0 bytes'; // Lowercase "bytes"
+            if (bytes === 0) return '0 bytes';
             const k = 1024;
             const dm = decimals < 0 ? 0 : decimals;
-            const sizes = ['bytes', 'kb', 'mb', 'gb', 'tb']; // Lowercase sizes
+            const sizes = ['bytes', 'kb', 'mb', 'gb', 'tb'];
             const i = Math.floor(log(bytes) / log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
         }
         
-        // --- Rendering Functions ---
-
-        // Renders an entry for a category or a file
+        // renders a single entry (category or file)
         function renderEntry(name, isFolder, size = null) {
             const entryElement = document.createElement('a');
             
-            // Set styles for all entries (clickable row) - REMOVED TRANSITION/EASE-IN-OUT
+            // static style for the clickable row (no hover effects)
             entryElement.className = 'flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 px-3 cursor-pointer mb-0.5';
 
             if (isFolder) {
-                // If it's a category, set the click action to fetch its files
+                // category entry
                 entryElement.href = "javascript:void(0)";
                 entryElement.onclick = () => fetchContent(name);
 
-                // Entry text for folders
                 entryElement.innerHTML = `
                     <span class="text-gray-300 truncate">
                         <span class="text-white mr-2">${name}/</span>
                     </span>
                 `;
             } else {
-                // If it's a file, set the direct download link
-                const downloadUrl = `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/${REPO_BRANCH}/${currentPath}/${encodeURIComponent(name)}`;
+                // file entry
+                const downloadUrl = \`https://raw.githubusercontent.com/\${GITHUB_USERNAME}/\${REPO_NAME}/\${REPO_BRANCH}/\${currentPath}/\${encodeURIComponent(name)}\`;
                 entryElement.href = downloadUrl; 
-                entryElement.target = "_blank"; // Opens the download in a new tab
+                entryElement.target = "_blank"; // opens download in new tab
 
-                // Entry text for files (showing file path and size)
-                entryElement.innerHTML = `
+                entryElement.innerHTML = \`
                     <span class="text-gray-300 truncate">
-                        <span class="text-white mr-2">/${currentPath}/</span>${name}
+                        <span class="text-white mr-2">/\${currentPath}/</span>\${name}
                     </span>
                     <span class="text-sm text-gray-400 sm:ml-4 mt-1 sm:mt-0 whitespace-nowrap">
-                        ${formatBytes(size)}
+                        \${formatBytes(size)}
                     </span>
-                `;
+                \`;
             }
             return entryElement;
         }
 
-
-        // Renders the main list of categories
+        // renders the initial list of categories
         function renderCategoryList() {
             listContainer.innerHTML = '';
             
             CATEGORIES.forEach(category => {
-                const entry = renderEntry(category, true); // true = is folder
+                const entry = renderEntry(category, true);
                 listContainer.appendChild(entry);
             });
         }
         
-        // --- Main Fetching Logic ---
-
+        // fetches and displays content from the github repository
         async function fetchContent(path = null) {
             currentPath = path;
             showLoading();
             
-            // Update UI elements based on path
+            // control back button visibility
             if (path === null) {
-                // Main Category View
                 backButton.classList.add('hidden');
                 renderCategoryList();
                 return;
             } else {
-                // Inside a Category View
                 backButton.classList.remove('hidden');
             }
 
-            // Sub-view: Show files for a specific category
-            const apiURL = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${path}?ref=${REPO_BRANCH}`;
+            const apiURL = \`https://api.github.com/repos/\${GITHUB_USERNAME}/\${REPO_NAME}/contents/\${path}?ref=\${REPO_BRANCH}\`;
 
-            listContainer.innerHTML = ''; // Clear container
-
+            listContainer.innerHTML = ''; // clear previous content
 
             try {
                 const response = await fetch(apiURL);
                 
                 if (!response.ok) {
-                    // Show error - Updated error message to be entirely lowercase
-                    listContainer.innerHTML = `<p class="text-red-400 p-3">error: could not load the directory for *${path}*. check that the folder exists in your github repo and is spelled correctly.</p>`;
+                    // error if the folder doesn't exist
+                    listContainer.innerHTML = \`<p class="text-red-400 p-3">error: could not load the directory for *\${path}*. check that the folder exists in your github repo and is spelled correctly.</p>\`;
                     return;
                 }
 
                 const data = await response.json();
                 
-                // Filter and sort files (folders first, then files alphabetically)
+                // only show files, sorted alphabetically
                 const files = data
-                    .filter(item => item.type === 'file') // Only show files
+                    .filter(item => item.type === 'file')
                     .sort((a, b) => a.name.localeCompare(b.name));
                 
                 if (files.length === 0) {
-                    // Updated empty directory message to be lowercase
-                    listContainer.innerHTML += `<p class="text-gray-400 p-3">no files found in the **/${path}/** directory.</p>`;
+                    // message if the directory is empty
+                    listContainer.innerHTML += \`<p class="text-gray-400 p-3">no files found in the **/\${path}/** directory.</p>\`;
                 } else {
                     files.forEach(file => {
-                        const fileEntry = renderEntry(file.name, false, file.size); // false = not folder
+                        const fileEntry = renderEntry(file.name, false, file.size);
                         listContainer.appendChild(fileEntry);
                     });
                 }
 
             } catch (error) {
-                console.error("Failed to fetch map files:", error);
-                // Updated network error message to be lowercase
+                console.error("failed to fetch map files:", error);
+                // general network error message
                 listContainer.innerHTML += '<p class="text-red-400 p-3">a network or api error occurred while trying to load files.</p>';
             }
         }
 
-        // Initialize the app by showing the category list
+        // start the app
         fetchContent(null);
     </script>
 </body>
