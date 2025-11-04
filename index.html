@@ -92,25 +92,21 @@
                 entryElement.href = "javascript:void(0)";
                 entryElement.onclick = () => fetchContent(name);
 
-                entryElement.innerHTML = `
-                    <span class="text-gray-300 truncate">
-                        <span class="text-white mr-2">${name}/</span>
-                    </span>
-                `;
+                entryElement.innerHTML = '<span class="text-gray-300 truncate">'
+                    + '<span class="text-white mr-2">' + name + '/</span>'
+                    + '</span>';
             } else {
                 // file entry
-                const downloadUrl = \`https://raw.githubusercontent.com/\${GITHUB_USERNAME}/\${REPO_NAME}/\${REPO_BRANCH}/\${currentPath}/\${encodeURIComponent(name)}\`;
+                const downloadUrl = 'https://raw.githubusercontent.com/' + GITHUB_USERNAME + '/' + REPO_NAME + '/' + REPO_BRANCH + '/' + currentPath + '/' + encodeURIComponent(name);
                 entryElement.href = downloadUrl; 
                 entryElement.target = "_blank";
 
-                entryElement.innerHTML = \`
-                    <span class="text-gray-300 truncate">
-                        <span class="text-white mr-2">/\${currentPath}/</span>\${name}
-                    </span>
-                    <span class="text-sm text-gray-400 sm:ml-4 mt-1 sm:mt-0 whitespace-nowrap">
-                        \${formatBytes(size)}
-                    </span>
-                \`;
+                entryElement.innerHTML = '<span class="text-gray-300 truncate">'
+                    + '<span class="text-white mr-2">/' + currentPath + '/</span>' + name
+                    + '</span>'
+                    + '<span class="text-sm text-gray-400 sm:ml-4 mt-1 sm:mt-0 whitespace-nowrap">'
+                    + formatBytes(size)
+                    + '</span>';
             }
             return entryElement;
         }
@@ -146,7 +142,7 @@
             const cacheBuster = Date.now();
             
             // append the cache buster to the API URL
-            const apiURL = \`https://api.github.com/repos/\${GITHUB_USERNAME}/\${REPO_NAME}/contents/\${path}?ref=\${REPO_BRANCH}&\${cacheBuster}\`;
+            const apiURL = 'https://api.github.com/repos/' + GITHUB_USERNAME + '/' + REPO_NAME + '/contents/' + path + '?ref=' + REPO_BRANCH + '&' + cacheBuster;
 
             try {
                 const response = await fetch(apiURL);
@@ -155,8 +151,8 @@
 
                 if (!response.ok) {
                     // error if the folder doesn't exist or API fails
-                    const errorText = \`error: failed to load *\${path}*. this may be due to the folder not existing or github api rate limits.\`;
-                    listContainer.innerHTML = \`<p class="text-red-400 p-3">\${errorText}</p>\`;
+                    const errorText = 'error: failed to load *' + path + '*. this may be due to the folder not existing or github api rate limits.';
+                    listContainer.innerHTML = '<p class="text-red-400 p-3">' + errorText + '</p>';
                     return;
                 }
 
@@ -169,7 +165,7 @@
                 
                 if (files.length === 0) {
                     // message if the directory is empty
-                    listContainer.innerHTML = \`<p class="text-gray-400 p-3">no files found in the **/\${path}/** directory.</p>\`;
+                    listContainer.innerHTML = '<p class="text-gray-400 p-3">no files found in the **/' + path + '/** directory.</p>';
                 } else {
                     listContainer.innerHTML = ''; // clear message
                     files.forEach(file => {
