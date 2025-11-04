@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title></title>
-    <!-- load tailwind css for styling -->
+    <!-- load tailwind css -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* custom scrollbar styles for dark theme */
+        /* custom scrollbar for dark theme */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -15,7 +15,7 @@
             background: #9ca3af; /* gray-400 */
         }
         ::-webkit-scrollbar-track {
-            background: #111827; /* very dark gray */
+            background: #111827;
         }
 
         /* ensure links inherit text color */
@@ -29,8 +29,7 @@
 
     <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         
-        <!-- back button: hidden when viewing categories, shown when viewing files -->
-        <!-- UPDATED: onclick now uses navigateTo to handle the path change -->
+        <!-- back button -->
         <a id="back-button" 
            href="javascript:void(0)" 
            onclick="navigateTo(null)"
@@ -38,11 +37,10 @@
             &lt;
         </a>
 
-        <!-- dynamic content area: where categories and files are listed -->
+        <!-- dynamic content area -->
         <main>
-            <!-- ADDED text-gray-300 CLASS HERE TO GUARANTEE VISIBILITY -->
             <div id="file-list-container" class="space-y-0 text-gray-300">
-                <!-- initial categories or file list will be injected here -->
+                <!-- content injected here -->
             </div>
         </main>
 
@@ -56,46 +54,41 @@
         const REPO_BRANCH = 'main'; 
         // =======================================
 
-        // the defined categories (folders) at the root level
         const CATEGORIES = ['deathrun', 'murder', 'prophunt', 'smash'];
-        
-        let currentPath = null; 
+        let currentpath = null; 
 
-        const listContainer = document.getElementById('file-list-container');
-        const backButton = document.getElementById('back-button'); 
+        const listcontainer = document.getElementById('file-list-container');
+        const backbutton = document.getElementById('back-button'); 
         
-        // resets the file list container to its normal flow
+        // resets the file list container classes
         function resetListContainerClasses() {
-             // ensure base classes remain, especially the new guaranteed text color
-             listContainer.className = 'space-y-0 text-gray-300'; 
+             listcontainer.className = 'space-y-0 text-gray-300'; 
         }
 
         // calculates safe log (used for size formatting)
-        const log = (x) => Math.log(x) / Math.LN10;
+        const log = (x) => math.log(x) / math.ln10;
 
-        // converts file size in bytes to human-readable format (e.g., "1.2 mb")
-        function formatBytes(bytes, decimals = 2) {
+        // converts file size in bytes to human-readable format
+        function formatbytes(bytes, decimals = 2) {
             if (bytes === 0) return '0 bytes';
             const k = 1024;
             const dm = decimals < 0 ? 0 : decimals;
             const sizes = ['bytes', 'kb', 'mb', 'gb', 'tb'];
-            const i = Math.floor(log(bytes) / log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+            const i = math.floor(log(bytes) / log(k));
+            return parsefloat((bytes / math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
         }
         
         // renders a single entry (category or file)
         function renderEntry(name, isFolder, size = null) {
             const entryElement = document.createElement('a');
             
-            // static style for the clickable row (no hover effects)
             entryElement.className = 'flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 px-3 cursor-pointer mb-0.5';
 
             if (isFolder) {
                 // category entry
-                // UPDATED: Use history API to change the URL
                 entryElement.href = "/" + name;
                 entryElement.onclick = (e) => {
-                    e.preventDefault(); // prevent default link behavior
+                    e.preventDefault(); 
                     navigateTo(name);
                 };
 
@@ -104,60 +97,66 @@
                     + '</span>';
             } else {
                 // file entry
-                const downloadUrl = 'https://raw.githubusercontent.com/' + GITHUB_USERNAME + '/' + REPO_NAME + '/' + REPO_BRANCH + '/' + currentPath + '/' + encodeURIComponent(name);
+                const downloadUrl = 'https://raw.githubusercontent.com/' + GITHUB_USERNAME + '/' + REPO_NAME + '/' + REPO_BRANCH + '/' + currentpath + '/' + encodeURIComponent(name);
                 entryElement.href = downloadUrl; 
                 entryElement.target = "_blank";
 
                 entryElement.innerHTML = '<span class="text-gray-300 truncate">'
-                    + '<span class="text-white mr-2">/' + currentPath + '/</span>' + name
+                    + '<span class="text-white mr-2">/' + currentpath + '/</span>' + name
                     + '</span>'
                     + '<span class="text-sm text-gray-400 sm:ml-4 mt-1 sm:mt-0 whitespace-nowrap">'
-                    + formatBytes(size)
+                    + formatbytes(size)
                     + '</span>';
             }
             return entryElement;
         }
 
-        // renders the initial list of categories (static content)
+        // renders the initial list of categories
         function renderCategoryList() {
             resetListContainerClasses();
-            listContainer.innerHTML = '';
+            listcontainer.innerHTML = '';
             
             CATEGORIES.forEach(category => {
                 const entry = renderEntry(category, true);
-                listContainer.appendChild(entry);
+                listcontainer.appendChild(entry);
             });
             // hide back button at root
-            backButton.classList.add('hidden');
+            backbutton.classList.add('hidden');
         }
 
         // handles client-side navigation and updates browser history
         function navigateTo(path) {
-            currentPath = path;
+            currentpath = path;
 
             if (path === null) {
-                // If path is null, navigate to the root and update history
-                history.pushState(null, '', window.location.pathname.split('/').slice(0, 2).join('/'));
+                // navigate to the root and update history
+                
+                // get the base path (e.g., /fast-dl) from the current url
+                const basePath = window.location.pathname.split('/').slice(0, 2).join('/');
+
+                // use the determined basepath to ensure the url is correct
+                history.pushState(null, '', basePath);
+                
                 renderCategoryList();
                 return;
             }
 
-            // Update browser history (URL will look like /fast-dl/murder)
+            // update browser history (url will look like /fast-dl/murder)
             history.pushState({path: path}, '', path);
             fetchContent(path);
         }
 
-        // fetches and displays content from the github repository (dynamic content)
+        // fetches and displays content from the github repository
         async function fetchContent(path) {
             
-            // show a quick message before fetching (since we removed the animation)
-            listContainer.innerHTML = '<p class="text-gray-500 p-3">fetching directory data...</p>';
-            backButton.classList.remove('hidden');
+            // show a quick message before fetching
+            listcontainer.innerHTML = '<p class="text-gray-500 p-3">fetching directory data...</p>';
+            backbutton.classList.remove('hidden');
 
             // generate a cache-busting timestamp
-            const cacheBuster = Date.now();
+            const cacheBuster = date.now();
             
-            // append the cache buster to the API URL
+            // append the cache buster to the api url
             const apiURL = 'https://api.github.com/repos/' + GITHUB_USERNAME + '/' + REPO_NAME + '/contents/' + path + '?ref=' + REPO_BRANCH + '&' + cacheBuster;
 
             try {
@@ -166,9 +165,9 @@
                 resetListContainerClasses();
 
                 if (!response.ok) {
-                    // error if the folder doesn't exist or API fails
+                    // error if the folder doesn't exist or api fails
                     const errorText = 'error: failed to load *' + path + '*. this may be due to the folder not existing or github api rate limits.';
-                    listContainer.innerHTML = '<p class="text-red-400 p-3">' + errorText + '</p>';
+                    listcontainer.innerHTML = '<p class="text-red-400 p-3">' + errorText + '</p>';
                     return;
                 }
 
@@ -177,23 +176,23 @@
                 // only show files, sorted alphabetically
                 const files = data
                     .filter(item => item.type === 'file')
-                    .sort((a, b) => a.name.localeCompare(b.name));
+                    .sort((a, b) => a.name.localecompare(b.name));
                 
                 if (files.length === 0) {
                     // message if the directory is empty
-                    listContainer.innerHTML = '<p class="text-gray-400 p-3">no files found in the **/' + path + '/** directory.</p>';
+                    listcontainer.innerHTML = '<p class="text-gray-400 p-3">no files found in the **/' + path + '/** directory.</p>';
                 } else {
-                    listContainer.innerHTML = ''; // clear message
+                    listcontainer.innerHTML = ''; // clear message
                     files.forEach(file => {
                         const fileEntry = renderEntry(file.name, false, file.size);
-                        listContainer.appendChild(fileEntry);
+                        listcontainer.appendChild(fileEntry);
                     });
                 }
 
             } catch (error) {
                 console.error("failed to fetch map files:", error);
                 // general network error message
-                listContainer.innerHTML = '<p class="text-red-400 p-3">a network error occurred (check your connection).</p>';
+                listcontainer.innerHTML = '<p class="text-red-400 p-3">a network error occurred (check your connection).</p>';
             }
         }
         
@@ -203,33 +202,33 @@
         window.onpopstate = (event) => {
             const path = window.location.pathname.split('/').pop();
             if (CATEGORIES.includes(path)) {
-                // User navigated back/forward into a category
-                currentPath = path;
+                // user navigated back/forward into a category
+                currentpath = path;
                 fetchContent(path);
             } else {
-                // User navigated back to the root
-                currentPath = null;
+                // user navigated back to the root
+                currentpath = null;
                 renderCategoryList();
             }
         };
 
         // determine initial path on page load
         function getInitialPath() {
-            // Get the last segment of the URL pathname (e.g., "murder" from /fast-dl/murder)
+            // get the last segment of the url pathname (e.g., "murder" from /fast-dl/murder)
             const path = window.location.pathname.split('/').pop();
             
-            // Only use the path if it matches one of our defined categories
+            // only use the path if it matches one of our defined categories
             if (CATEGORIES.includes(path)) {
                 return path;
             }
             return null;
         }
 
-        // start the app by checking the URL or rendering the static category list
-        const initialPath = getInitialPath();
-        if (initialPath) {
-             currentPath = initialPath;
-             fetchContent(initialPath);
+        // start the app by checking the url or rendering the static category list
+        const initialpath = getInitialPath();
+        if (initialpath) {
+             currentpath = initialpath;
+             fetchContent(initialpath);
         } else {
              renderCategoryList();
         }
