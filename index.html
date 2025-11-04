@@ -22,10 +22,9 @@
             overflow: hidden;
             display: inline-block;
             vertical-align: bottom;
-            /* uses a 1s cycle and steps to instantly change the content property */
             -webkit-animation: loading-dots 1s infinite steps(1, start);
             animation: loading-dots 1s infinite steps(1, start);
-            content: ""; /* starts empty */
+            content: "";
         }
         
         @keyframes loading-dots {
@@ -43,7 +42,7 @@
             100% { content: ""; }
         }
 
-        /* ensure links inherit text color (no blue/purple links) */
+        /* ensure links inherit text color */
         a {
             color: inherit;
         }
@@ -64,11 +63,7 @@
 
         <!-- dynamic content area: where categories and files are listed -->
         <main>
-            <div id="file-list-container" class="space-y-0 min-h-[50px]">
-                <!-- initial loading message -->
-                <p id="initial-loading-message" class="text-gray-400 p-3">
-                    loading <span class="loading-dots"></span>
-                </p>
+            <div id="file-list-container" class="space-y-0">
             </div>
         </main>
 
@@ -76,11 +71,11 @@
 
     <!-- javascript for dynamic github file fetching -->
     <script>
-        // === github repository configuration (change these) ===
+        // === github repository configuration ===
         const GITHUB_USERNAME = 'mattywashere'; 
         const REPO_NAME = 'fast-dl'; 
         const REPO_BRANCH = 'main'; 
-        // =======================================================
+        // =======================================
 
         // the defined categories (folders) at the root level
         const CATEGORIES = ['deathrun', 'murder', 'prophunt', 'smash'];
@@ -90,9 +85,15 @@
         const listContainer = document.getElementById('file-list-container');
         const backButton = document.getElementById('back-button'); 
         
-        // displays the loading state in lowercase
+        // resets the file list container to its normal flow
+        function resetListContainerClasses() {
+             listContainer.className = 'space-y-0';
+        }
+
+        // displays the loading state in lowercase and centers it
         function showLoading() {
-            listContainer.innerHTML = `<p class="text-gray-400 p-3">loading <span class="loading-dots"></span></p>`;
+            listContainer.className = 'flex items-center justify-center h-screen space-y-0'; 
+            listContainer.innerHTML = `<p class="text-gray-400">loading <span class="loading-dots"></span></p>`;
         }
 
         // calculates safe log (used for size formatting)
@@ -129,7 +130,7 @@
                 // file entry
                 const downloadUrl = \`https://raw.githubusercontent.com/\${GITHUB_USERNAME}/\${REPO_NAME}/\${REPO_BRANCH}/\${currentPath}/\${encodeURIComponent(name)}\`;
                 entryElement.href = downloadUrl; 
-                entryElement.target = "_blank"; // opens download in new tab
+                entryElement.target = "_blank";
 
                 entryElement.innerHTML = \`
                     <span class="text-gray-300 truncate">
@@ -145,6 +146,7 @@
 
         // renders the initial list of categories
         function renderCategoryList() {
+            resetListContainerClasses();
             listContainer.innerHTML = '';
             
             CATEGORIES.forEach(category => {
@@ -157,7 +159,7 @@
         async function fetchContent(path = null) {
             currentPath = path;
             showLoading();
-            
+
             // control back button visibility
             if (path === null) {
                 backButton.classList.add('hidden');
@@ -169,11 +171,13 @@
 
             const apiURL = \`https://api.github.com/repos/\${GITHUB_USERNAME}/\${REPO_NAME}/contents/\${path}?ref=\${REPO_BRANCH}\`;
 
-            listContainer.innerHTML = ''; // clear previous content
+            listContainer.innerHTML = '';
 
             try {
                 const response = await fetch(apiURL);
                 
+                resetListContainerClasses();
+
                 if (!response.ok) {
                     // error if the folder doesn't exist
                     listContainer.innerHTML = \`<p class="text-red-400 p-3">error: could not load the directory for *\${path}*. check that the folder exists in your github repo and is spelled correctly.</p>\`;
