@@ -40,7 +40,7 @@
         <!-- dynamic content area: where categories and files are listed -->
         <main>
             <div id="file-list-container" class="space-y-0">
-                <!-- initial content will be injected here -->
+                <!-- initial categories or file list will be injected here -->
             </div>
         </main>
 
@@ -65,14 +65,6 @@
         // resets the file list container to its normal flow
         function resetListContainerClasses() {
              listContainer.className = 'space-y-0';
-        }
-
-        // displays a non-animated message when fetching starts
-        function showFetchingMessage() {
-            // reset classes to ensure it's not trying to center anything
-            resetListContainerClasses(); 
-            // set a simple static message to show work is being done
-            listContainer.innerHTML = '<p class="text-gray-500 p-3">fetching directory data...</p>';
         }
 
         // calculates safe log (used for size formatting)
@@ -123,7 +115,7 @@
             return entryElement;
         }
 
-        // renders the initial list of categories
+        // renders the initial list of categories (static content)
         function renderCategoryList() {
             resetListContainerClasses();
             listContainer.innerHTML = '';
@@ -132,24 +124,23 @@
                 const entry = renderEntry(category, true);
                 listContainer.appendChild(entry);
             });
+            // hide back button at root
+            backButton.classList.add('hidden');
         }
         
-        // fetches and displays content from the github repository
+        // fetches and displays content from the github repository (dynamic content)
         async function fetchContent(path = null) {
             currentPath = path;
 
-            // 1. show message immediately before fetching
-            showFetchingMessage();
-
-            // control back button visibility
+            // if path is null, we are returning to the root, so skip API call
             if (path === null) {
-                backButton.classList.add('hidden');
-                // if at root, skip fetch and render static list
                 renderCategoryList();
                 return;
-            } else {
-                backButton.classList.remove('hidden');
             }
+
+            // show a quick message before fetching (since we removed the animation)
+            listContainer.innerHTML = '<p class="text-gray-500 p-3">fetching directory data...</p>';
+            backButton.classList.remove('hidden');
 
             // generate a cache-busting timestamp
             const cacheBuster = Date.now();
@@ -178,8 +169,9 @@
                 
                 if (files.length === 0) {
                     // message if the directory is empty
-                    listContainer.innerHTML += \`<p class="text-gray-400 p-3">no files found in the **/\${path}/** directory.</p>\`;
+                    listContainer.innerHTML = \`<p class="text-gray-400 p-3">no files found in the **/\${path}/** directory.</p>\`;
                 } else {
+                    listContainer.innerHTML = ''; // clear message
                     files.forEach(file => {
                         const fileEntry = renderEntry(file.name, false, file.size);
                         listContainer.appendChild(fileEntry);
@@ -193,8 +185,8 @@
             }
         }
 
-        // start the app
-        fetchContent(null);
+        // start the app by rendering the static category list
+        renderCategoryList();
     </script>
 </body>
 </html>
