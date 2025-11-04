@@ -1,261 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title></title>
-    <!-- load tailwind css -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* custom scrollbar for dark theme */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #9ca3af; /* gray-400 */
-        }
-        ::-webkit-scrollbar-track {
-            background: #111827;
-        }
-
-        /* ensure links inherit text color */
-        a {
-            color: inherit;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FastDL</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-thumb{background:#9ca3af}
+::-webkit-scrollbar-track{background:#111827}
+a{color:inherit}
+</style>
 </head>
-<!-- set body to black background and monospace font -->
-<body class="bg-black text-gray-300 antialiased font-mono">
+<body class="bg-black text-gray-300 font-mono antialiased">
+<div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+<a id="back" href="javascript:void(0)" onclick="nav(null)" class="hidden text-gray-400 text-3xl mb-4 pl-3 cursor-pointer">&lt;</a>
+<main><div id="list" class="space-y-0 text-gray-300"></div></main>
+</div>
+<script>
+const USER='mattywashere',REPO='fast-dl',BRANCH='main',CATS=['deathrun','murder','prophunt','smash'];
+let cur=null,list=document.getElementById('list'),back=document.getElementById('back');
 
-    <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        
-        <!-- back button -->
-        <a id="back-button" 
-           href="javascript:void(0)" 
-           onclick="navigateTo(null)"
-           class="hidden text-gray-400 text-3xl mb-4 pl-3 cursor-pointer">
-            &lt;
-        </a>
+const fmt=b=>{
+  if(!b)return'0 bytes';
+  const k=1024,s=['bytes','kb','mb','gb','tb'],i=Math.floor(Math.log(b)/Math.log(k));
+  return (b/Math.pow(k,i)).toFixed(2)+' '+s[i];
+};
 
-        <!-- dynamic content area -->
-        <main>
-            <div id="file-list-container" class="space-y-0 text-gray-300">
-                <!-- content injected here -->
-            </div>
-        </main>
+const entry=(n,f,s=null)=>{
+  const e=document.createElement('a');
+  e.className='flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 px-3 cursor-pointer mb-0.5';
+  if(f){
+    e.href='/'+n;
+    e.onclick=x=>{x.preventDefault();nav(n)};
+    e.innerHTML=`<span class="text-gray-300 truncate"><span class="text-white mr-2">${n}/</span></span>`;
+  }else{
+    const url=`https://raw.githubusercontent.com/${USER}/${REPO}/${BRANCH}/${cur}/${encodeURIComponent(n)}`;
+    e.href=url;e.target='_blank';
+    e.innerHTML=`<span class="text-gray-300 truncate"><span class="text-white mr-2">/${cur}/</span>${n}</span><span class="text-sm text-gray-400 sm:ml-4 mt-1 sm:mt-0 whitespace-nowrap">${fmt(s)}</span>`;
+  }
+  return e;
+};
 
-    </div>
+const cats=()=>{
+  list.className='space-y-0 text-gray-300';list.innerHTML='';
+  CATS.forEach(c=>list.appendChild(entry(c,1)));
+  back.classList.add('hidden');
+};
 
-    <!-- javascript for dynamic github file fetching -->
-    <script>
-        // === github repository configuration ===
-        const GITHUB_USERNAME = 'mattywashere'; 
-        const REPO_NAME = 'fast-dl'; 
-        const REPO_BRANCH = 'main'; 
-        // =======================================
+const nav=p=>{
+  cur=p;
+  if(!p){
+    history.pushState(null,'',location.origin+'/'+REPO+'/');
+    cats();return;
+  }
+  history.pushState({p},'',`/${REPO}/${p}`);
+  load(p);
+};
 
-        const CATEGORIES = ['deathrun', 'murder', 'prophunt', 'smash'];
-        let currentpath = null; 
+const load=async p=>{
+  list.innerHTML='<p class="text-gray-500 p-3">fetching directory data...</p>';
+  back.classList.remove('hidden');
+  try{
+    const r=await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${p}?ref=${BRANCH}&${Date.now()}`);
+    list.className='space-y-0 text-gray-300';
+    if(!r.ok){list.innerHTML=`<p class="text-red-400 p-3">error loading *${p}*</p>`;return;}
+    const d=await r.json(),f=d.filter(i=>i.type==='file').sort((a,b)=>a.name.localeCompare(b.name));
+    list.innerHTML=f.length?'' : `<p class="text-gray-400 p-3">no files found in **/${p}/**</p>`;
+    f.forEach(x=>list.appendChild(entry(x.name,0,x.size)));
+  }catch{list.innerHTML='<p class="text-red-400 p-3">network error</p>'}
+};
 
-        const listcontainer = document.getElementById('file-list-container');
-        const backbutton = document.getElementById('back-button'); 
-        
-        // resets the file list container classes
-        function resetListContainerClasses() {
-             listcontainer.className = 'space-y-0 text-gray-300'; 
-        }
+onpopstate=()=>{
+  const s=location.pathname.split('/').filter(x=>x),
+  i=s.indexOf(REPO);
+  let p=null;
+  if(i!=-1&&s[i+1]&&CATS.includes(s[i+1]))p=s[i+1];
+  p?(cur=p,load(p)):(cur=null,cats());
+};
 
-        // calculates safe log (used for size formatting)
-        const log = (x) => math.log(x) / math.ln10;
-
-        // converts file size in bytes to human-readable format
-        function formatbytes(bytes, decimals = 2) {
-            if (bytes === 0) return '0 bytes';
-            const k = 1024;
-            const dm = decimals < 0 ? 0 : decimals;
-            const sizes = ['bytes', 'kb', 'mb', 'gb', 'tb'];
-            const i = math.floor(log(bytes) / log(k));
-            return parsefloat((bytes / math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-        }
-        
-        // renders a single entry (category or file)
-        function renderEntry(name, isFolder, size = null) {
-            const entryElement = document.createElement('a');
-            
-            entryElement.className = 'flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 px-3 cursor-pointer mb-0.5';
-
-            if (isFolder) {
-                // category entry
-                entryElement.href = "/" + name;
-                entryElement.onclick = (e) => {
-                    e.preventDefault(); 
-                    navigateTo(name);
-                };
-
-                entryElement.innerHTML = '<span class="text-gray-300 truncate">'
-                    + '<span class="text-white mr-2">' + name + '/</span>'
-                    + '</span>';
-            } else {
-                // file entry
-                const downloadUrl = 'https://raw.githubusercontent.com/' + GITHUB_USERNAME + '/' + REPO_NAME + '/' + REPO_BRANCH + '/' + currentpath + '/' + encodeURIComponent(name);
-                entryElement.href = downloadUrl; 
-                entryElement.target = "_blank";
-
-                entryElement.innerHTML = '<span class="text-gray-300 truncate">'
-                    + '<span class="text-white mr-2">/' + currentpath + '/</span>' + name
-                    + '</span>'
-                    + '<span class="text-sm text-gray-400 sm:ml-4 mt-1 sm:mt-0 whitespace-nowrap">'
-                    + formatbytes(size)
-                    + '</span>';
-            }
-            return entryElement;
-        }
-
-        // renders the initial list of categories
-        function renderCategoryList() {
-            resetListContainerClasses();
-            listcontainer.innerHTML = '';
-            
-            CATEGORIES.forEach(category => {
-                const entry = renderEntry(category, true);
-                listcontainer.appendChild(entry);
-            });
-            // hide back button at root
-            backbutton.classList.add('hidden');
-        }
-
-        // handles client-side navigation and updates browser history
-        function navigateTo(path) {
-            currentpath = path;
-
-            if (path === null) {
-                // navigate to the root and update history
-                
-                // Construct the absolute base URL: https://mattywashere.github.io/fast-dl/
-                const baseHost = window.location.origin;
-                const absoluteRoot = baseHost + '/' + REPO_NAME + '/';
-
-                // Force the history state back to the absolute root URL
-                history.pushState(null, '', absoluteRoot);
-                
-                renderCategoryList();
-                return;
-            }
-
-            // --- FIX APPLIED HERE ---
-            // Construct the full URL path: e.g., /fast-dl/murder
-            const fullPath = '/' + REPO_NAME + '/' + path;
-            
-            // update browser history (url will now look like /fast-dl/murder)
-            history.pushState({path: path}, '', fullPath);
-            fetchContent(path);
-        }
-
-        // fetches and displays content from the github repository
-        async function fetchContent(path) {
-            
-            // show a quick message before fetching
-            listcontainer.innerHTML = '<p class="text-gray-500 p-3">fetching directory data...</p>';
-            backbutton.classList.remove('hidden');
-
-            // generate a cache-busting timestamp
-            const cacheBuster = date.now();
-            
-            // append the cache buster to the api url
-            const apiURL = 'https://api.github.com/repos/' + GITHUB_USERNAME + '/' + REPO_NAME + '/contents/' + path + '?ref=' + REPO_BRANCH + '&' + cacheBuster;
-
-            try {
-                const response = await fetch(apiURL);
-                
-                resetListContainerClasses();
-
-                if (!response.ok) {
-                    // error if the folder doesn't exist or api fails
-                    const errorText = 'error: failed to load *' + path + '*. this may be due to the folder not existing or github api rate limits.';
-                    listcontainer.innerHTML = '<p class="text-red-400 p-3">' + errorText + '</p>';
-                    return;
-                }
-
-                const data = await response.json();
-                
-                // only show files, sorted alphabetically
-                const files = data
-                    .filter(item => item.type === 'file')
-                    .sort((a, b) => a.name.localecompare(b.name));
-                
-                if (files.length === 0) {
-                    // message if the directory is empty
-                    listcontainer.innerHTML = '<p class="text-gray-400 p-3">no files found in the **/' + path + '/** directory.</p>';
-                } else {
-                    listcontainer.innerHTML = ''; // clear message
-                    files.forEach(file => {
-                        const fileEntry = renderEntry(file.name, false, file.size);
-                        listcontainer.appendChild(fileEntry);
-                    });
-                }
-
-            } catch (error) {
-                console.error("failed to fetch map files:", error);
-                // general network error message
-                listcontainer.innerHTML = '<p class="text-red-400 p-3">a network error occurred (check your connection).</p>';
-            }
-        }
-        
-        // === initial loading and history handling ===
-
-        // handle browser's back/forward buttons
-        window.onpopstate = (event) => {
-            // Get the last path segment that is a category, or null for root
-            const pathSegments = window.location.pathname.split('/').filter(s => s);
-            // Check the segment after the repo name (fast-dl)
-            const repoIndex = pathSegments.findIndex(segment => segment === REPO_NAME);
-            
-            let currentPathFromUrl = null;
-            if (repoIndex !== -1 && pathSegments.length > repoIndex + 1) {
-                const potentialPath = pathSegments[repoIndex + 1];
-                if (CATEGORIES.includes(potentialPath)) {
-                    currentPathFromUrl = potentialPath;
-                }
-            }
-
-            if (currentPathFromUrl) {
-                // user navigated back/forward into a category
-                currentpath = currentPathFromUrl;
-                fetchContent(currentPathFromUrl);
-            } else {
-                // user navigated back to the root
-                currentpath = null;
-                renderCategoryList();
-            }
-        };
-
-        // determine initial path on page load
-        function getInitialPath() {
-            // get the last segment of the url pathname (e.g., "murder" from /fast-dl/murder)
-            const pathSegments = window.location.pathname.split('/').filter(s => s);
-            
-            // Find the index of the repository name in the path
-            const repoIndex = pathSegments.findIndex(segment => segment === REPO_NAME);
-
-            // Check if there is a segment immediately following the REPO_NAME
-            if (repoIndex !== -1 && pathSegments.length > repoIndex + 1) {
-                 const path = pathSegments[repoIndex + 1];
-                 // only use the path if it matches one of our defined categories
-                 if (CATEGORIES.includes(path)) {
-                     return path;
-                 }
-            }
-            return null;
-        }
-
-        // start the app by checking the url or rendering the static category list
-        const initialpath = getInitialPath();
-        if (initialpath) {
-             currentpath = initialpath;
-             fetchContent(initialpath);
-        } else {
-             renderCategoryList();
-        }
-    </script>
+const init=()=>{
+  const s=location.pathname.split('/').filter(x=>x),i=s.indexOf(REPO);
+  const p=i!=-1&&s[i+1]&&CATS.includes(s[i+1])?s[i+1]:null;
+  p?(cur=p,load(p)):cats();
+};
+init();
+</script>
 </body>
 </html>
